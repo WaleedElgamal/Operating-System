@@ -1,0 +1,9 @@
+semWait userInput
+assign filename input
+semSignal userInput
+semWait file
+assign temp readFile filename -- ask about this
+semSignal file
+semWait userOutput
+print temp
+semSignal userOutput

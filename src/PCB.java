@@ -4,13 +4,15 @@ public class PCB {
     private int pid;
     private State processState;
     private int programCounter;
-    private int[] memoryBoundaries;
+    private int memoryBegin;
+    private int memoryEnd;
 
-    public PCB(int pid, State processState, int programCounter, int[] memoryBoundaries) {
+    public PCB(int pid, State processState, int programCounter, int memoryBegin, int memoryEnd) {
         this.pid = pid;
         this.processState = processState;
         this.programCounter = programCounter;
-        this.memoryBoundaries = memoryBoundaries;
+        this.memoryBegin = memoryBegin;
+        this.memoryEnd = memoryEnd;
     }
 
     public int getPid() {
@@ -34,10 +36,17 @@ public class PCB {
         this.programCounter = programCounter;
     }
 
-    public int[] getMemoryBoundaries() {
-        return memoryBoundaries;
+    public int getMemoryBegin() {
+        return memoryBegin;
     }
-    public void setMemoryBoundaries(int[] memoryBoundaries) {
-        this.memoryBoundaries = memoryBoundaries;
+    public void setMemoryBegin(int memoryBegin) {
+        this.memoryBegin = memoryBegin;
+    }
+
+    public int getMemoryEnd() {
+        return memoryEnd;
+    }
+    public void setMemoryEnd(int memoryEnd) {
+        this.memoryEnd = memoryEnd;
     }
 }
