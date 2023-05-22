@@ -14,6 +14,7 @@ public class Scheduler {
     private static Mutex outputMutex = new Mutex();
     private static Mutex fileMutex = new Mutex(); // accessing a file on disk (read/write)
     private int timeSlice; // represents the time slice for the round robin algorithm
+    private int currentSlice;
     private int[] processBegin; // starting position of process in memory
     private int[] processEnd; // ending position of process in memory
     private int[] currInstruction; // position of the current instruction relative to processBegin
@@ -34,10 +35,43 @@ public class Scheduler {
         }
     }
 
+    public void schedule() {
+        if (runningProcessID != -1) {
+            if (currentSlice < timeSlice) {
+                Main.execute(runningProcessID);
+                currentSlice++;
+            } else {
+                runningProcessID = -1;
+                currentSlice = 0;
+                if (!readyQueue.isEmpty()) {
+                    runningProcessID = readyQueue.remove();
+                    Main.execute();
+                    currentSlice++;
+                }
+                if () { //condition to check that we did not finish all the process instructions
+                    readyQueue.add(runningProcessID);
+                }
+
+            }
+        }
+        else {
+            if (!readyQueue.isEmpty()) {
+                runningProcessID = readyQueue.remove();
+                Main.execute();
+                currentSlice++;
+            }
+        }
+    }
+
+    public void addToReadyQueue(int processID) {
+        readyQueue.add(processID);
+    }
+
+
     public void blockProcess(int pid) {
-        readyQueue.remove(pid);
-        blockedQueue.add(pid);
-        // set process state to blocked
+    readyQueue.remove(pid);
+    blockedQueue.add(pid);
+    // set process state to blocked
     }
     public void unblockProcess(int pid) {
         blockedQueue.remove(pid);
