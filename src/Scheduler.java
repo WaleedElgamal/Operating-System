@@ -1,6 +1,8 @@
 package src;
 
 
+import java.util.ArrayDeque;
+import java.util.LinkedList;
 import java.util.Queue;
 
 public class Scheduler {
@@ -18,5 +20,33 @@ public class Scheduler {
 
     // need a variable for current instruction
     // array or arraylist to hold order of processes?
+
+    public Scheduler(int timeSlice) {
+        this.readyQueue = new ArrayDeque<>(); // ArrayDeque is faster than LinkedList when removing from middle of queue
+        this.blockedQueue = new ArrayDeque<>();
+        this.timeSlice = timeSlice;
+        this.processBegin = new int[10];
+        this.processEnd = new int[10];
+        this.currInstruction = new int[10];
+        this.runningProcessID = -1;
+        this.inputMutex = new Mutex();
+        this.outputMutex = new Mutex();
+        this.fileMutex = new Mutex();
+        for (int i = 0; i < 40; i++) {
+            memory[i] = new MemoryWord();
+        }
+    }
+
+    public void blockProcess(int pid) {
+        readyQueue.remove(pid);
+        blockedQueue.add(pid);
+        // set process state to blocked
+    }
+    public void unblockProcess(int pid) {
+        blockedQueue.remove(pid);
+        readyQueue.add(pid);
+        // set process state to ready
+    }
+
 }
 

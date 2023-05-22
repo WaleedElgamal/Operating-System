@@ -12,28 +12,30 @@ public class Mutex {
         this.blockedQueue = new LinkedList<>();
     }
 
-    public void semWait(int pid) {
+    public void semWait(int pid, Scheduler scheduler) {
         if (locked) {
             blockedQueue.add(pid);
+            scheduler.blockProcess(pid); // blockProcess will add the process to the blocked queue and remove it from ready queue + set its state to blocked
         } else {
             locked = true;
             ownerID = pid;
         }
     }
 
-    public void semSignal(int pid) {
+    public void semSignal(int pid, Scheduler scheduler) {
         if(ownerID != pid) {
             return;
         }
-        release();
+        release(pid, scheduler);
     }
 
-    private void release(){
+    private void release(int pid, Scheduler scheduler){
         if (blockedQueue.isEmpty()) {
             locked = false;
             ownerID = -1;
         } else {
             ownerID = blockedQueue.remove();
+            scheduler.unblockProcess(ownerID); // unblockProcess will add the process to the ready queue and remove it from the blocked queue + set its state to ready
         }
     }
 
