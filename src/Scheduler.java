@@ -10,9 +10,9 @@ public class Scheduler {
     private Queue<Integer> blockedQueue;
     private MemoryWord[] memory = new MemoryWord[40];
     private int runningProcessID;
-    private static Mutex inputMutex;
-    private static Mutex outputMutex;
-    private static Mutex fileMutex; // accessing a file on disk (read/write)
+    private static Mutex inputMutex = new Mutex();
+    private static Mutex outputMutex = new Mutex();
+    private static Mutex fileMutex = new Mutex(); // accessing a file on disk (read/write)
     private int timeSlice; // represents the time slice for the round robin algorithm
     private int[] processBegin; // starting position of process in memory
     private int[] processEnd; // ending position of process in memory
@@ -29,9 +29,6 @@ public class Scheduler {
         this.processEnd = new int[10];
         this.currInstruction = new int[10];
         this.runningProcessID = -1;
-        this.inputMutex = new Mutex();
-        this.outputMutex = new Mutex();
-        this.fileMutex = new Mutex();
         for (int i = 0; i < 40; i++) {
             memory[i] = new MemoryWord();
         }
