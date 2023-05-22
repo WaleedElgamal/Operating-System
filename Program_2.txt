@@ -1,7 +1,7 @@
 semWait userInput
-assign filename input
-assign data input
+assign a input
+assign b input
 semSignal userInput
 semWait file
-writeFile filename data
+writeFile a b
 semSignal file
