@@ -4,7 +4,6 @@ public class Memory {
 
 
     private MemoryWord[] Memory = new MemoryWord[40];
-    // private boolean[] taken = new boolean[40];
 
     boolean p1;
     boolean p2;
@@ -22,19 +21,12 @@ public class Memory {
         Memory = memory;
     }
 
-    public boolean[] getTaken() {
-        return taken;
-    }
-
-    public void setTaken(boolean[] taken) {
-        this.taken = taken;
-    }
 
     public int hasSpace() //returns -1 if no empty spaces
     {
-        if(p1==false )//&& taken[26]==false) //first slot of process is empty + maybe 26 wont be used
-            return 12;
-        else if(p2==false)// && taken[39]==false) //second slot of process is empty + maybe 39 wont be used
+        if(Memory[15]==null )//&& taken[26]==false) //first slot of process is empty + maybe 26 wont be used
+            return 15;
+        else if(Memory[27]==null)// && taken[39]==false) //second slot of process is empty + maybe 39 wont be used
             return 27;
         else
             return -1; //both slots are occupied
@@ -47,18 +39,12 @@ public class Memory {
         // else // need to check if there is space outside and checking which process to pre empt
 
     }
-    public void insertIntoMemory(int position, String  program) //position read from pcv attribute?
-    { //TODO handle from outside the p1 or p2, as well as switching out
+    public void insertIntoMemory(int position, Process p) //position read from pcv attribute?
+    { //TODO handle program attribute in process for this logic to work
 
-        String[] programSplit= program.split();
-        if (position==12)
-        {
-            p1=true; //taken
-        }
-        else
-        {
-            p2=true;
-        }
+        String program=p.getProgram(); //gets the string file of the instructions
+        String[] programSplit= program.split("\n");
+
         for(int i=position; i<program.length();i++)
         {
 
@@ -66,10 +52,48 @@ public class Memory {
 
         }
 
-    }
+        switch(P.getProcessOrder) ////Fix memory bounds in PCB
+        {
+            case 1:
+                Memory[3]=p.getMemoryStart();
+                Memory[4]=p.getMemoryStart()+12;
+                break;
+            case 2:
+                Memory[8]=p.getMemoryStart();
+                Memory[9]=p.getMemoryStart()+12;
+                break;
+            case 3:
+                Memory[13]=p.getMemoryStart();
+                Memory[14]=p.getMemoryStart()+12;
+                break;
 
-    public void removeFromMemory(int position, int programID) //make boolean false
+
+        }
+
+    public void removeFromMemory(Process p) //deletes process from memory by nullifying its segment
     {
+            int position = p.getP(); //returns P1 or P2
+            int begin=P.getMemoryStart(); //reutrns memory bound 1
+            int end=begin+ 12; //
+            for(int i=begin;i<=end;i++) //nullifies position
+            {
+                Memory[i]=null;
+            }
+            switch(P.getProcessOrder) //nullify memory bounds in PCB
+            {
+                case 1:
+                    Memory[3]=null;
+                    Memory[4]=null;
+                    break;
+                case 2:
+                    Memory[8]=null;
+                    Memory[9]=null;
+                    break;
+                case 3:
+                    Memory[13]=null;
+                    Memory[14]=null;
+                    break;
 
+            }
     }
 }
