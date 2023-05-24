@@ -5,10 +5,6 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 
 public class Scheduler {
-    private static Mutex inputMutex = new Mutex();
-    private static Mutex outputMutex = new Mutex();
-    private static Mutex fileMutex = new Mutex(); // accessing a file on disk (read/write)
-    private static Memory memory = new Memory();
     private Queue<Integer> readyQueue;
     private Queue<Integer> blockedQueue;
     private int runningProcessID;
@@ -25,51 +21,17 @@ public class Scheduler {
         // TODO: create the memory
     }
 
-    public static Mutex getInputMutex() {
-        return inputMutex;
-    }
-
-    public static void setInputMutex(Mutex inputMutex) {
-        Scheduler.inputMutex = inputMutex;
-    }
-
-    public static Mutex getOutputMutex() {
-        return outputMutex;
-    }
-
-    public static void setOutputMutex(Mutex outputMutex) {
-        Scheduler.outputMutex = outputMutex;
-    }
-
-    // Getters and setters
-
-    public static Mutex getFileMutex() {
-        return fileMutex;
-    }
-
-    public static void setFileMutex(Mutex fileMutex) {
-        Scheduler.fileMutex = fileMutex;
-    }
-
-    public static Memory getMemory() {
-        return memory;
-    }
-
-    public static void setMemory(Memory memory) {
-        Scheduler.memory = memory;
-    }
-
     public void schedule() {
         if (runningProcessID != -1) {
             if (currentSlice < timeSlice) {
-                Main.execute(runningProcessID); //still not implemeneted
+                OperatingSystem.execute(runningProcessID); //still not implemeneted
                 currentSlice++;
             } else {
                 runningProcessID = -1;
                 currentSlice = 0;
                 if (!readyQueue.isEmpty()) {
                     runningProcessID = readyQueue.remove();
-                    Main.execute();
+                    OperatingSystem.execute();
                     currentSlice++;
                 }
                 if () { //condition to check that we did not finish all the pid instructions
@@ -80,13 +42,13 @@ public class Scheduler {
         } else {
             if (!readyQueue.isEmpty()) {
                 runningProcessID = readyQueue.remove();
-                Main.execute();
+                OperatingSystem.execute();
                 currentSlice++;
             }
         }
     }
 
-    public void addToReadyQueue(Integer pid) {
+    public void addProcess(Integer pid) {
         readyQueue.add(pid);
     }
 

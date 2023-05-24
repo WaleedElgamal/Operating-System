@@ -28,7 +28,9 @@ public class SystemCalls {
 
     public static void writeFile(String filename, String content){
         try {
-            BufferedWriter bw = new BufferedWriter(new FileWriter(new File(filename)));
+            File file = new File(filename);
+            file.createNewFile();
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file));
             bw.write(content);
             bw.close();
         } catch (IOException e) {
