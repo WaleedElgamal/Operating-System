@@ -12,36 +12,47 @@ public class Mutex {
         this.blockedQueue = new LinkedList<>();
     }
 
-    public void semWait(int pid, Scheduler scheduler) {
+    public void semWait(Integer pid, Scheduler scheduler) {
+        // If the lock is already acquired by another process
         if (locked) {
+            // Add the current process to the blocked queue
             blockedQueue.add(pid);
-            scheduler.blockProcess(pid); // blockProcess will add the process to the blocked queue and remove it from ready queue + set its state to blocked
+            // Block the current process using the scheduler
+            scheduler.blockProcess(pid);
         } else {
+            // Acquire the lock for the current process
             locked = true;
             ownerID = pid;
         }
     }
 
-    public void semSignal(int pid, Scheduler scheduler) {
-        if(ownerID != pid) {
-            return;
+    public void semSignal(Integer pid, Scheduler scheduler) {
+        // If the current process is the owner of the lock
+        if (ownerID == pid) {
+            // Release the lock
+            release(scheduler);
         }
-        release(pid, scheduler);
     }
 
-    private void release(int pid, Scheduler scheduler){
+    private void release(Scheduler scheduler) {
+        // If no other process is waiting for the lock
         if (blockedQueue.isEmpty()) {
+            // Release the lock
             locked = false;
             ownerID = -1;
         } else {
-            ownerID = blockedQueue.remove();
-            scheduler.unblockProcess(ownerID); // unblockProcess will add the process to the ready queue and remove it from the blocked queue + set its state to ready
+            // Assign the lock to the next process in the blocked queue
+            Integer currProcess = blockedQueue.remove();
+            ownerID = currProcess;
+            // Unblock the next process using the scheduler
+            scheduler.unblockProcess(currProcess);
         }
     }
 
     public boolean isLocked() {
         return locked;
     }
+
     public void setLocked(boolean locked) {
         this.locked = locked;
     }
@@ -49,6 +60,7 @@ public class Mutex {
     public int getOwnerID() {
         return ownerID;
     }
+
     public void setOwnerID(int ownerID) {
         this.ownerID = ownerID;
     }
@@ -56,6 +68,7 @@ public class Mutex {
     public Queue<Integer> getBlockedQueue() {
         return blockedQueue;
     }
+
     public void setBlockedQueue(Queue<Integer> blockedQueue) {
         this.blockedQueue = blockedQueue;
     }

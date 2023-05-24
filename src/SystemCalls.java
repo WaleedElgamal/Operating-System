@@ -5,16 +5,11 @@ import java.util.Scanner;
 
 public class SystemCalls {
 
-
     public static void print(String message) {
         System.out.println(message);
     }
 
-    public static void print(int message) {
-        System.out.println(message);
-    }
-
-    public String readFile(String filename) throws IOException {
+    public static String readFile(String filename) {
 
         String res = "";
         try {
@@ -31,7 +26,7 @@ public class SystemCalls {
         return res;
     }
 
-    public void writeFile(String filename, String content) throws IOException {
+    public static void writeFile(String filename, String content){
         try {
             BufferedWriter bw = new BufferedWriter(new FileWriter(new File(filename)));
             bw.write(content);
