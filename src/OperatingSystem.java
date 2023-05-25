@@ -16,6 +16,9 @@ public class OperatingSystem {
     private Scheduler scheduler;
     private CodeParser parser;
     private int clockCycle;
+
+    private boolean[] isFinished;
+    private String[] programPaths;
     private int[] arrivalTimes;
 
     private Object[] tempValues; // used to store the value of a variable when it is being used in a multi clockCycle instruction
@@ -42,17 +45,20 @@ public class OperatingSystem {
     // 27-35  -> instructions
     // 36-38 -> variables
 
-    private OperatingSystem(Integer timeSlice) {
+    private OperatingSystem() {
         this.memory = new MemoryWord[40];
         this.inputMutex = new Mutex();
         this.outputMutex = new Mutex();
         this.fileMutex = new Mutex();
-        this.scheduler = new Scheduler(timeSlice);
+        this.scheduler = new Scheduler();
         this.parser = new CodeParser(scheduler);
         this.clockCycle = 0;
 
         tempValues = new Object[3];
         arrivalTimes = new int[3];
+        programPaths = new String[3];
+        isFinished = new boolean[3];
+
         memory = new MemoryWord[40];
         for (int i = 0; i < 40; i++) {
             memory[i] = new MemoryWord();
@@ -61,11 +67,37 @@ public class OperatingSystem {
     }
 
     public static OperatingSystem getInstance() {
+        if (instance == null)
+            instance = new OperatingSystem();
         return instance;
     }
 
-    public void runOS() {
+    public void init(String[] programPaths, int[] arrivalTimes, int timeSlice) {
+        this.programPaths = programPaths;
+        this.arrivalTimes = arrivalTimes;
+        if (timeSlice > 0)
+            setTimeSlice(timeSlice);
+        else
+            System.out.println("Invalid time slice");
+    }
 
+    public void runOS() {
+        while(!allProcessesFinished()){
+            System.out.println("Clock Cycle: " + clockCycle);
+            if(arrivalTimes[0]==clockCycle){
+                createProcess(programPaths[0]);
+            }
+            else if(arrivalTimes[1]==clockCycle){
+                createProcess(programPaths[1]);
+            }
+            else if(arrivalTimes[2]==clockCycle){
+                createProcess(programPaths[2]);
+            }
+
+            scheduler.schedule();
+
+            clockCycle++;
+        }
     }
 
     public void execute(int pid){
@@ -82,24 +114,46 @@ public class OperatingSystem {
         if(tempValues[pid]==null) {
             incrementProgramCounter(pid);
         }
+        System.out.println("runningProcessID: " + scheduler.getRunningProcessID());
+        System.out.println("currentSlice: " + scheduler.getCurrentSlice());
         printMemory();
-        clockCycle++;
     }
 
     public boolean processFinished(int pid){
-        int memoryBegin = getMemoryBegin(pid);
-        int memoryEnd = getMemoryEnd(pid);
-        int programCounter = getProgramCounter(pid);
-        int currentInstruction = memoryBegin + programCounter;
+        Integer memoryBegin = getMemoryBegin(pid);
+        Integer memoryEnd = getMemoryEnd(pid);
+        Integer programCounter = getProgramCounter(pid);
+        Integer currentInstruction = memoryBegin + programCounter;
         if(memory[currentInstruction].getInstruction() == null || currentInstruction == memoryEnd)
             return true;
         return false;
     }
 
+    public boolean allProcessesFinished(){
+      for(int i = 0; i < 3; i++){
+            if(!isFinished[i])
+                return false;
+        }
+        return true;
+    }
 
     // Memory methods
 
-    public void createProcess(String program) {
+    public void createProcess(String filePath) {
+        // retrieve the program from the file
+        String program = "";
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(new File(filePath)));
+            String line = br.readLine();
+            while (line != null) {
+                program += line + "\n";
+                line = br.readLine();
+            }
+            br.close();
+        } catch (IOException e) {
+            System.out.println("File not found");
+        }
+
         // create the PCB
 
         // give the process a pid
@@ -132,6 +186,7 @@ public class OperatingSystem {
 
         // insert process into memory
         insertProcessIntoMemory(program, pid);
+        scheduler.addToReadyQueue(pid);
     }
 
     public void insertProcessIntoMemory(String program, Integer pid) {
@@ -166,7 +221,6 @@ public class OperatingSystem {
 
 
     public void insertInstructionsIntoMemory(Integer pid, Integer memoryPosition, String program) { // position read from pcv attribute?
-        // TODO handle program attribute in process for this logic to work
         String[] programSplit = program.split("\n");
 
         Integer instructionStart = memoryPosition;
@@ -263,14 +317,26 @@ public class OperatingSystem {
         } catch (IOException e) {
             System.out.println("File not found");
         }
+
+        // clear file
+        try {
+            PrintWriter writer = new PrintWriter("MemoryOnDisk.txt");
+            writer.print("");
+            writer.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found.");
+        }
+
         insertProcessIntoMemory(instructions, pid);
         insertVariablesIntoMemory(pid, variableNames, variableValues);
     }
 
     public void printMemory() {
+        System.out.println("Memory: {");
         for (int i = 0; i < 40; i++) {
             System.out.println(memory[i].toString());
         }
+        System.out.println("}");
     }
 
     public Integer getNextPid() {
@@ -287,13 +353,15 @@ public class OperatingSystem {
         int res = -1;
         boolean blockedFound = false;
         for (int i = 0; i < 3; i++) {
-            if (getProcessState(i) == State.FINISHED && getMemoryBegin(i) != null) {
-                return i;
-            } else if (getProcessState(i) == State.BLOCKED && getMemoryBegin(i) != null) {
-                res = i;
-                blockedFound = true;
-            } else if (!blockedFound && getProcessState(i) == State.READY && getMemoryBegin(i) != null) {
-                res = i;
+            if (getProcessState(i) != State.RUNNING) {
+                if (getProcessState(i) == State.FINISHED && getMemoryBegin(i) != null) {
+                    return i;
+                } else if (getProcessState(i) == State.BLOCKED && getMemoryBegin(i) != null) {
+                    res = i;
+                    blockedFound = true;
+                } else if (!blockedFound && getProcessState(i) == State.READY && getMemoryBegin(i) != null) {
+                    res = i;
+                }
             }
         }
         return res;
@@ -387,5 +455,24 @@ public class OperatingSystem {
 
     public void setArrivalTimes(int[] arrivalTimes) {
         this.arrivalTimes = arrivalTimes;
+    }
+
+    public String[] getProgramPaths() {
+        return programPaths;
+    }
+
+    public void setProgramPaths(String[] programPaths) {
+        this.programPaths = programPaths;
+    }
+
+    public void setTimeSlice(int timeSlice){
+        scheduler.setTimeSlice(timeSlice);
+    }
+    public int getTimeSlice() {
+        return scheduler.getTimeSlice();
+    }
+
+    public boolean[] getIsFinished() {
+        return isFinished;
     }
 }

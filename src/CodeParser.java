@@ -49,6 +49,8 @@ public class CodeParser {
             case "print": {
                 String value = tokens[1];
                 for (int i = 0; i < variables.length; i++) {
+                    if (variables[i] == null) // TODO: add this to other loops
+                        break;
                     if (variables[i].equals(value)) {
                         value = (String) getVariableValue(pid, value);
                         break;
@@ -59,17 +61,19 @@ public class CodeParser {
                 break;
             }
             case "printFromTo": {
-                String from = tokens[1];
-                String to = tokens[2];
+                Object from = tokens[1];
+                Object to = tokens[2];
                 for (int i = 0; i < variables.length; i++) {
-                    if (variables[i].equals(from)) {
-                        from = (String) getVariableValue(pid, from);
-                    } else if (variables[i].equals(to)) {
-                        to = (String) getVariableValue(pid, to);
+                    if (variables[i] == null) // TODO: add this to other loops
+                        break;
+                    if (variables[i].equals((String) (from + ""))) {
+                        from = getVariableValue(pid, (String) from);
+                    } else if (variables[i].equals((String) (to + ""))) {
+                        to = getVariableValue(pid, (String) to);
                     }
                 }
                 try {
-                    printFromTo(Integer.parseInt(from), Integer.parseInt(to));
+                    printFromTo((Integer) from, (Integer) to);
                 } catch (NumberFormatException e) {
                     print("Invalid input");
                 }
@@ -78,11 +82,28 @@ public class CodeParser {
             case "writeFile": {
                 String filename = tokens[1];
                 String content = tokens[2];
+                for (int i = 0; i < variables.length; i++) {
+                    if (variables[i] == null) // TODO: add this to other loops
+                        break;
+                    if (variables[i].equals(content)) {
+                        content = (String) (getVariableValue(pid, (String) content) + "");
+                    }else if (variables[i].equals(filename)) {
+                        filename = (String) (getVariableValue(pid, (String) filename) + "");
+                    }
+                }
                 writeFile(filename, content);
                 break;
             }
             case "readFile": {
                 String filename = tokens[1];
+                for (int i = 0; i < variables.length; i++) {
+                    if (variables[i] == null) // TODO: add this to other loops
+                        break;
+                    else if (variables[i].equals(filename)) {
+                        filename = (String) (getVariableValue(pid, (String) filename) + "");
+                        break;
+                    }
+                }
                 tempValue[pid] = readFile(filename);
                 break;
             }
@@ -102,11 +123,21 @@ public class CodeParser {
                         case "readFile": {
                             //first time slice so we do readfile first
                             String filename = tokens[3];
+                            for (int i = 0; i < variables.length; i++) {
+                                if (variables[i] == null) // TODO: add this to other loops
+                                    break;
+                                else if (variables[i].equals(filename)) {
+                                    filename = (String) (getVariableValue(pid, (String) filename) + "");
+                                    break;
+                                }
+                            }
                             tempValue[pid] = OperatingSystem.parseString(readFile(filename));
                             break;
                         }
                         default: {
                             for (int i = 0; i < variables.length; i++) {
+                                if (variables[i] == null) // TODO: add this to other loops
+                                    break;
                                 if (variables[i].equals(value)) {
                                     value = getVariableValue(pid, (String) value);
                                     break;
@@ -188,10 +219,10 @@ public class CodeParser {
         Integer variableBegin = end - 2;
         for (int i = variableBegin; i <= end; i++) {
             MemoryWord mem = SystemCalls.readMem(i);
-//            if (variableName.equals(mem.getVariableName())) { // if variable already exists
-//                mem.setValue(value);
-//                break;
-//            }
+            if (variableName.equals(mem.getVariableName())) { // if variable already exists
+                mem.setValue(value);
+                break;
+            }
             if (mem.getVariableName() == null) { // creating new variable
                 SystemCalls.writeMem(new MemoryWord(variableName, value), i);
                 break;

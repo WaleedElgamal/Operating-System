@@ -12,10 +12,10 @@ public class Scheduler {
     private int currentSlice;
 
 
-    public Scheduler(int timeSlice) {
+    public Scheduler() {
         this.readyQueue = new ArrayDeque<>(); // ArrayDeque is faster than LinkedList when removing from middle of queue
         this.blockedQueue = new ArrayDeque<>();
-        this.timeSlice = timeSlice;
+        this.timeSlice = 0;
         this.currentSlice = 0;
         this.runningProcessID = -1;
     }
@@ -25,15 +25,11 @@ public class Scheduler {
         if (runningProcessID != -1) {
             if (operatingSystem.processFinished(runningProcessID)) {
                 terminateProcess(runningProcessID);
-                runningProcessID = -1;
-                currentSlice = 0;
-            }else if (operatingSystem.getProcessState(runningProcessID) == State.BLOCKED){
-                runningProcessID = -1;
-                currentSlice = 0;
             }
             else if (currentSlice < timeSlice) {
-                operatingSystem.execute(runningProcessID); //still not implemeneted
+                operatingSystem.execute(runningProcessID);
                 currentSlice++;
+                return;
 //                schedule();
             } else {
                 addToReadyQueue(runningProcessID);
@@ -48,11 +44,13 @@ public class Scheduler {
             }
             operatingSystem.execute(runningProcessID);
             currentSlice++;
+            return;
 //            schedule();
         }
     }
 
     public void chooseNextProcess() {
+        currentSlice = 0;
         int pid = readyQueue.remove();
         runningProcessID = pid;
         OperatingSystem.getInstance().setProcessState(pid, State.RUNNING);
@@ -79,6 +77,8 @@ public class Scheduler {
     public void blockProcess(Integer pid) {
         readyQueue.remove(pid);
         addToBlockedQueue(pid);
+        runningProcessID = -1;
+        currentSlice = 0;
         printQueues();
     }
 
