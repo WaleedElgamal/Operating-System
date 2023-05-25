@@ -45,12 +45,13 @@ public class SystemCalls {
     }
 
     public static MemoryWord readMem(int address) {
-        return memory[address];
+        return OperatingSystem.getMemory()[address];
     }
 
     public static void writeMem(MemoryWord mem, int address) {
-        memory[address].setVariableName(mem.getVariableName());
-        memory[address].setValue(mem.getValue());
-
+        //when we write into memory a new variable using assign, create a new word
+        OperatingSystem.getMemory()[address].setVariableName(mem.getVariableName());
+        OperatingSystem.getMemory()[address].setValue(mem.getValue());
+        OperatingSystem.getMemory()[address].setInstruction(mem.getInstruction());
     }
 }

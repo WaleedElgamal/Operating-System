@@ -8,10 +8,22 @@ public class OperatingSystem {
     private static Mutex outputMutex;
     private static Mutex fileMutex; // accessing a file on disk (read/write)
     private static MemoryWord[] memory;
+
     // locations of first and second loaded programs in memory
     private final Integer firstProgram = 15;
     private final Integer secondProgram = 27;
+
     private Scheduler scheduler;
+    private CodeParser parser;
+    private int clockCycle;
+    private int[] arrivalTimes;
+
+    private Object[] tempValues; // used to store the value of a variable when it is being used in a multi clockCycle instruction
+
+
+    private static OperatingSystem instance;
+
+
     // PCB order in memory  is: PID, State, ProgramCounter, MemoryBegin, MemoryEnd
 
     // PCBs
@@ -30,16 +42,58 @@ public class OperatingSystem {
     // 27-35  -> instructions
     // 36-38 -> variables
 
-    public OperatingSystem(Integer timeSlice) {
+    private OperatingSystem(Integer timeSlice) {
         this.memory = new MemoryWord[40];
         this.inputMutex = new Mutex();
         this.outputMutex = new Mutex();
         this.fileMutex = new Mutex();
         this.scheduler = new Scheduler(timeSlice);
+        this.parser = new CodeParser(scheduler);
+        this.clockCycle = 0;
+
+        tempValues = new Object[3];
+        arrivalTimes = new int[3];
         memory = new MemoryWord[40];
         for (int i = 0; i < 40; i++) {
             memory[i] = new MemoryWord();
         }
+        instance = this;
+    }
+
+    public static OperatingSystem getInstance() {
+        return instance;
+    }
+
+    public void runOS() {
+
+    }
+
+    public void execute(int pid){
+
+        System.out.println("Executing process " + pid);
+
+        int currInstruction = getMemoryBegin(pid) + getProgramCounter(pid);
+        String instruction = memory[currInstruction].getInstruction();
+
+        System.out.println("Executing Instruction: " + instruction);
+
+        parser.parseLine(instruction, pid, tempValues);
+        //only incrementing counter if we didn't do readfile or input into tempValue (assign a readfile b || assign a input)
+        if(tempValues[pid]==null) {
+            incrementProgramCounter(pid);
+        }
+        printMemory();
+        clockCycle++;
+    }
+
+    public boolean processFinished(int pid){
+        int memoryBegin = getMemoryBegin(pid);
+        int memoryEnd = getMemoryEnd(pid);
+        int programCounter = getProgramCounter(pid);
+        int currentInstruction = memoryBegin + programCounter;
+        if(memory[currentInstruction].getInstruction() == null || currentInstruction == memoryEnd)
+            return true;
+        return false;
     }
 
 
@@ -83,7 +137,7 @@ public class OperatingSystem {
     public void insertProcessIntoMemory(String program, Integer pid) {
         Integer position = memoryHasSpace();
         if (position != -1) {
-            insertInstructionsIntoMemory(position, pid, program);
+            insertInstructionsIntoMemory(pid, position, program);
 //            scheduler.addProcess(process);
         } else {
             int processToSwap = getProcessToSwap();
@@ -91,6 +145,14 @@ public class OperatingSystem {
             removeFromMemory(processToSwap);
             insertInstructionsIntoMemory(pid, processToSwapMemoryBegin, program);
         }
+    }
+
+    public boolean processInMemory(Integer pid){
+        Integer memoryBegin = getMemoryBegin(pid);
+        Integer memoryEnd = getMemoryEnd(pid);
+        if(memoryBegin == null || memoryEnd == null)
+            return false;
+        return true;
     }
 
     public Integer memoryHasSpace() {  // returns -1 if no empty spaces
@@ -101,6 +163,7 @@ public class OperatingSystem {
         else
             return -1; // both slots are occupied
     }
+
 
     public void insertInstructionsIntoMemory(Integer pid, Integer memoryPosition, String program) { // position read from pcv attribute?
         // TODO handle program attribute in process for this logic to work
@@ -141,6 +204,11 @@ public class OperatingSystem {
     }
 
     public void swapProcessToDisk(Integer pid) { // memory to disk
+
+        System.out.println("Swapping process " + pid + " to disk");
+        if (getProcessState(pid).equals(State.FINISHED))
+            return;
+
         Integer begin = getMemoryBegin(pid); // returns memory bound 1
         Integer end = getMemoryEnd(pid); // returns memory bound 2
 
@@ -164,6 +232,7 @@ public class OperatingSystem {
     }
 
     public void swapProcessToMemory(Integer pid) { // disk to memory
+        System.out.println("Swapping process " + pid + " to memory");
         String instructions = "";
         String[] variableNames = new String[3];
         Object[] variableValues = new Object[3];
@@ -214,12 +283,20 @@ public class OperatingSystem {
     }
 
     public Integer getProcessToSwap() {
+        // Priority: finished > blocked > ready
+        int res = -1;
+        boolean blockedFound = false;
         for (int i = 0; i < 3; i++) {
-            if (getProcessState(i) != State.RUNNING && getMemoryBegin(i) != null) {
+            if (getProcessState(i) == State.FINISHED && getMemoryBegin(i) != null) {
                 return i;
+            } else if (getProcessState(i) == State.BLOCKED && getMemoryBegin(i) != null) {
+                res = i;
+                blockedFound = true;
+            } else if (!blockedFound && getProcessState(i) == State.READY && getMemoryBegin(i) != null) {
+                res = i;
             }
         }
-        return -1;
+        return res;
     }
 
     // PCB info getters
@@ -239,6 +316,12 @@ public class OperatingSystem {
         // get program counter from memory
         Integer pcbStart = pid * 5;
         return (Integer) memory[pcbStart + 2].getValue();
+    }
+
+    public void incrementProgramCounter(Integer pid) {
+        // increment program counter in memory
+        Integer pcbStart = pid * 5;
+        memory[pcbStart + 2].setValue((Integer) memory[pcbStart + 2].getValue() + 1);
     }
 
     public Integer getMemoryBegin(Integer pid) {
@@ -276,5 +359,33 @@ public class OperatingSystem {
                 }
             }
         }
+    }
+
+    // getters and setters
+    public Object[] getTempValues() {
+        return tempValues;
+    }
+    public static MemoryWord[] getMemory() {
+        return memory;
+    }
+    public void incrementClockCycle() {
+        clockCycle++;
+    }
+    public static Mutex getInputMutex() {
+        return inputMutex;
+    }
+    public static Mutex getOutputMutex() {
+        return outputMutex;
+    }
+    public static Mutex getFileMutex() {
+        return fileMutex;
+    }
+
+    public int[] getArrivalTimes() {
+        return arrivalTimes;
+    }
+
+    public void setArrivalTimes(int[] arrivalTimes) {
+        this.arrivalTimes = arrivalTimes;
     }
 }
