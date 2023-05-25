@@ -49,7 +49,7 @@ public class CodeParser {
             case "print": {
                 String value = tokens[1];
                 for (int i = 0; i < variables.length; i++) {
-                    if (variables[i] == null) // TODO: add this to other loops
+                    if (variables[i] == null)
                         break;
                     if (variables[i].equals(value)) {
                         value = (String) getVariableValue(pid, value);
@@ -57,14 +57,13 @@ public class CodeParser {
                     }
                 }
                 print(value);
-                // TODO: handle if "value" is a system call (e.g: print input)
                 break;
             }
             case "printFromTo": {
                 Object from = tokens[1];
                 Object to = tokens[2];
                 for (int i = 0; i < variables.length; i++) {
-                    if (variables[i] == null) // TODO: add this to other loops
+                    if (variables[i] == null)
                         break;
                     if (variables[i].equals((String) (from + ""))) {
                         from = getVariableValue(pid, (String) from);
@@ -83,7 +82,7 @@ public class CodeParser {
                 String filename = tokens[1];
                 String content = tokens[2];
                 for (int i = 0; i < variables.length; i++) {
-                    if (variables[i] == null) // TODO: add this to other loops
+                    if (variables[i] == null)
                         break;
                     if (variables[i].equals(content)) {
                         content = (String) (getVariableValue(pid, (String) content) + "");
@@ -97,7 +96,7 @@ public class CodeParser {
             case "readFile": {
                 String filename = tokens[1];
                 for (int i = 0; i < variables.length; i++) {
-                    if (variables[i] == null) // TODO: add this to other loops
+                    if (variables[i] == null)
                         break;
                     else if (variables[i].equals(filename)) {
                         filename = (String) (getVariableValue(pid, (String) filename) + "");
@@ -124,7 +123,7 @@ public class CodeParser {
                             //first time slice so we do readfile first
                             String filename = tokens[3];
                             for (int i = 0; i < variables.length; i++) {
-                                if (variables[i] == null) // TODO: add this to other loops
+                                if (variables[i] == null)
                                     break;
                                 else if (variables[i].equals(filename)) {
                                     filename = (String) (getVariableValue(pid, (String) filename) + "");
@@ -136,7 +135,7 @@ public class CodeParser {
                         }
                         default: {
                             for (int i = 0; i < variables.length; i++) {
-                                if (variables[i] == null) // TODO: add this to other loops
+                                if (variables[i] == null) 
                                     break;
                                 if (variables[i].equals(value)) {
                                     value = getVariableValue(pid, (String) value);
