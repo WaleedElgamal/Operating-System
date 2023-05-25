@@ -116,16 +116,12 @@ public class OperatingSystem {
         memory[pcbStart + 4].setValue(memoryPosition + 11); // memory end
     }
 
-    public void insertVariablesIntoMemory(Integer pid, String variables) {
-        String[] variablesSplit = variables.split("\n");
+    public void insertVariablesIntoMemory(Integer pid, String[] variableNames, Object[] variableValues) {
         Integer memoryEnd = getMemoryEnd(pid);
         Integer variablesStart = memoryEnd - 2;
         for (int memoryLoc = variablesStart; memoryLoc <= memoryEnd; memoryLoc++) {
-            String[] lineSplit = variablesSplit[memoryLoc - variablesStart].split(" "); // memoryLoc - variablesStart to start from 0
-            String variableName = lineSplit[1];
-            String variableValue = lineSplit[2];
-            memory[memoryLoc].setVariableName(variableName);
-            memory[memoryLoc].setValue(variableValue);
+            memory[memoryLoc].setVariableName(variableNames[memoryLoc - variablesStart]);
+            memory[memoryLoc].setValue(variableValues[memoryLoc - variablesStart]);
         }
     }
 
@@ -169,7 +165,9 @@ public class OperatingSystem {
 
     public void swapProcessToMemory(Integer pid) { // disk to memory
         String instructions = "";
-        String variables = "";
+        String[] variableNames = new String[3];
+        Object[] variableValues = new Object[3];
+        int varCount = 0;
         try {
             BufferedReader br = new BufferedReader(new FileReader(new File("MemoryOnDisk.txt")));
             String line = br.readLine();
@@ -179,12 +177,16 @@ public class OperatingSystem {
                     while (!line.replaceAll("\n", "").equals("__ENDPROCESS__")) {
                         String[] tokens = line.split(" ");
                         if (tokens[0].equals("variable")) {
-                            variables += line + "\n";
+                             variableNames[varCount] = tokens[1];
+                             variableValues[varCount] = parseString(tokens[3]);
+                            varCount++;
                         } else {
                             instructions += line + "\n";
                             line = br.readLine();
                         }
                     }
+                    if (line.replaceAll("\n", "").equals("__ENDPROCESS__"))
+                        break;
                 }
                 line = br.readLine();
             }
@@ -193,6 +195,7 @@ public class OperatingSystem {
             System.out.println("File not found");
         }
         insertProcessIntoMemory(instructions, pid);
+        insertVariablesIntoMemory(pid, variableNames, variableValues);
     }
 
     public void printMemory() {
@@ -248,5 +251,30 @@ public class OperatingSystem {
         // get memory end from memory
         Integer pcbStart = pid * 5;
         return (Integer) memory[pcbStart + 4].getValue();
+    }
+
+    public Object getVariableValue(int pid, String variableName){
+        Integer end = getMemoryEnd(pid); // returns memory bound 2
+        for (int i = end; i >= end-2; i--) {
+            if(memory[i].getVariableName().equals(variableName))
+                return memory[i].getValue();
+        }
+        return null;
+    }
+
+    public static Object parseString(String input) {
+        try {
+            return Integer.parseInt(input);
+        } catch (NumberFormatException e1) {
+            try {
+                return Double.parseDouble(input);
+            } catch (NumberFormatException e2) {
+                if (input.equalsIgnoreCase("true") || input.equalsIgnoreCase("false")) {
+                    return Boolean.parseBoolean(input);
+                } else {
+                    return input;
+                }
+            }
+        }
     }
 }

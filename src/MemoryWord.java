@@ -2,12 +2,12 @@ package src;
 
 public class MemoryWord {
     private String variableName;
-    private String value;
+    private Object value;
     private String instruction;
 
 
 
-    public MemoryWord(String variableName, String value) {
+    public MemoryWord(String variableName, Object value) {
         this.variableName = variableName;
         this.value = value;
     }
