@@ -27,6 +27,7 @@ public class OperatingSystem {
     private static OperatingSystem instance;
 
 
+
     // PCB order in memory  is: PID, State, ProgramCounter, MemoryBegin, MemoryEnd
 
     // PCBs
@@ -64,6 +65,7 @@ public class OperatingSystem {
             memory[i] = new MemoryWord();
         }
         instance = this;
+
     }
 
     public static OperatingSystem getInstance() {

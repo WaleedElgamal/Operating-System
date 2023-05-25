@@ -69,6 +69,9 @@ public class Scheduler {
 
     public void terminateProcess(Integer pid) {
         OperatingSystem.getInstance().setProcessState(pid, State.FINISHED);
+        OperatingSystem.getInstance().getIsFinished()[pid] = true;
+        runningProcessID = -1;
+        currentSlice = 0;
         printQueues();
     }
 
