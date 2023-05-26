@@ -5,16 +5,11 @@ import java.util.Scanner;
 
 public class SystemCalls {
 
-
     public static void print(String message) {
         System.out.println(message);
     }
 
-    public static void print(int message) {
-        System.out.println(message);
-    }
-
-    public String readFile(String filename) throws IOException {
+    public static String readFile(String filename) {
 
         String res = "";
         try {
@@ -31,9 +26,11 @@ public class SystemCalls {
         return res;
     }
 
-    public void writeFile(String filename, String content) throws IOException {
+    public static void writeFile(String filename, String content){
         try {
-            BufferedWriter bw = new BufferedWriter(new FileWriter(new File(filename)));
+            File file = new File(filename);
+            file.createNewFile();
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file));
             bw.write(content);
             bw.close();
         } catch (IOException e) {
@@ -48,12 +45,13 @@ public class SystemCalls {
     }
 
     public static MemoryWord readMem(int address) {
-        return memory[address];
+        return OperatingSystem.getMemory()[address];
     }
 
     public static void writeMem(MemoryWord mem, int address) {
-        memory[address].setVariableName(mem.getVariableName());
-        memory[address].setValue(mem.getValue());
-
+        //when we write into memory a new variable using assign, create a new word
+        OperatingSystem.getMemory()[address].setVariableName(mem.getVariableName());
+        OperatingSystem.getMemory()[address].setValue(mem.getValue());
+        OperatingSystem.getMemory()[address].setInstruction(mem.getInstruction());
     }
 }

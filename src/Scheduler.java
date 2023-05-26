@@ -2,81 +2,144 @@ package src;
 
 
 import java.util.ArrayDeque;
-import java.util.LinkedList;
 import java.util.Queue;
 
 public class Scheduler {
     private Queue<Integer> readyQueue;
     private Queue<Integer> blockedQueue;
-    private MemoryWord[] memory = new MemoryWord[40];
     private int runningProcessID;
-    private static Mutex inputMutex = new Mutex();
-    private static Mutex outputMutex = new Mutex();
-    private static Mutex fileMutex = new Mutex(); // accessing a file on disk (read/write)
     private int timeSlice; // represents the time slice for the round robin algorithm
     private int currentSlice;
-    private int[] processBegin; // starting position of process in memory
-    private int[] processEnd; // ending position of process in memory
-    private int[] currInstruction; // position of the current instruction relative to processBegin
 
-    // need a variable for current instruction
-    // array or arraylist to hold order of processes?
 
-    public Scheduler(int timeSlice) {
+    public Scheduler() {
         this.readyQueue = new ArrayDeque<>(); // ArrayDeque is faster than LinkedList when removing from middle of queue
         this.blockedQueue = new ArrayDeque<>();
-        this.timeSlice = timeSlice;
-        this.processBegin = new int[10];
-        this.processEnd = new int[10];
-        this.currInstruction = new int[10];
+        this.timeSlice = 0;
+        this.currentSlice = 0;
         this.runningProcessID = -1;
-        for (int i = 0; i < 40; i++) {
-            memory[i] = new MemoryWord();
-        }
     }
 
     public void schedule() {
+        OperatingSystem operatingSystem = OperatingSystem.getInstance();
         if (runningProcessID != -1) {
-            if (currentSlice < timeSlice) {
-                Main.execute(runningProcessID); //still not implemeneted
+            if (operatingSystem.processFinished(runningProcessID)) {
+                terminateProcess(runningProcessID);
+            }
+            else if (currentSlice < timeSlice) {
+                operatingSystem.execute(runningProcessID);
                 currentSlice++;
+                return;
+//                schedule();
             } else {
+                addToReadyQueue(runningProcessID);
                 runningProcessID = -1;
                 currentSlice = 0;
-                if (!readyQueue.isEmpty()) {
-                    runningProcessID = readyQueue.remove();
-                    Main.execute();
-                    currentSlice++;
-                }
-                if () { //condition to check that we did not finish all the process instructions
-                    readyQueue.add(runningProcessID);
-                }
-
             }
         }
-        else {
-            if (!readyQueue.isEmpty()) {
-                runningProcessID = readyQueue.remove();
-                Main.execute();
-                currentSlice++;
+        if (!readyQueue.isEmpty()) {
+            chooseNextProcess();
+            if(!operatingSystem.processInMemory(runningProcessID)){
+                operatingSystem.swapProcessToMemory(runningProcessID);
             }
+            operatingSystem.execute(runningProcessID);
+            currentSlice++;
+            return;
+//            schedule();
         }
     }
 
-    public void addToReadyQueue(int processID) {
-        readyQueue.add(processID);
+    public void chooseNextProcess() {
+        currentSlice = 0;
+        int pid = readyQueue.remove();
+        runningProcessID = pid;
+        OperatingSystem.getInstance().setProcessState(pid, State.RUNNING);
+        printQueues();
     }
 
-
-    public void blockProcess(int pid) {
-    readyQueue.remove(pid);
-    blockedQueue.add(pid);
-    // set process state to blocked
-    }
-    public void unblockProcess(int pid) {
-        blockedQueue.remove(pid);
+    public void addToReadyQueue(Integer pid) {
         readyQueue.add(pid);
-        // set process state to ready
+        OperatingSystem.getInstance().setProcessState(pid, State.READY);
+    }
+
+    public void addToBlockedQueue(Integer pid) {
+        blockedQueue.add(pid);
+        OperatingSystem.getInstance().setProcessState(pid, State.BLOCKED);
+    }
+
+    public void terminateProcess(Integer pid) {
+        OperatingSystem.getInstance().setProcessState(pid, State.FINISHED);
+        OperatingSystem.getInstance().getIsFinished()[pid] = true;
+        runningProcessID = -1;
+        currentSlice = 0;
+        printQueues();
+    }
+
+    // Resource management methods
+
+    public void blockProcess(Integer pid) {
+        readyQueue.remove(pid);
+        addToBlockedQueue(pid);
+        runningProcessID = -1;
+        currentSlice = 0;
+        printQueues();
+    }
+
+    public void unblockProcess(Integer pid) {
+        blockedQueue.remove(pid);
+        addToReadyQueue(pid);
+    }
+
+
+    public void printQueues(){
+        System.out.println("Ready Queue: " + readyQueue);
+        System.out.println("Blocked Queue: " + blockedQueue);
+    }
+
+    // Getters and setters
+
+    public Queue<Integer> getReadyQueue() {
+        return readyQueue;
+    }
+
+    public void setReadyQueue(Queue<Integer> readyQueue) {
+        this.readyQueue = readyQueue;
+    }
+
+    public Queue<Integer> getBlockedQueue() {
+        return blockedQueue;
+    }
+
+    public void setBlockedQueue(Queue<Integer> blockedQueue) {
+        this.blockedQueue = blockedQueue;
+    }
+
+    public int getRunningProcessID() {
+        return runningProcessID;
+    }
+
+    public void setRunningProcessID(int runningProcessID) {
+        this.runningProcessID = runningProcessID;
+    }
+
+    public int getTimeSlice() {
+        return timeSlice;
+    }
+
+    public void setTimeSlice(int timeSlice) {
+        this.timeSlice = timeSlice;
+    }
+
+    public int getCurrentSlice() {
+        return currentSlice;
+    }
+
+    public void setCurrentSlice(int currentSlice) {
+        this.currentSlice = currentSlice;
+    }
+
+    public void incrementCurrentSlice() {
+        this.currentSlice++;
     }
 
 }
