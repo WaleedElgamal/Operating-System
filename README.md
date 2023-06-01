@@ -1,4 +1,4 @@
-# Operating-Systems
+# Operating-System
 Building the architecture and simulating a real operating system using Java.
 
 
